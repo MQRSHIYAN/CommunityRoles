@@ -1,0 +1,198 @@
+// File: main_convert.cpp
+// -- conversion of a graph from ascii to binary, sample main file
+//-----------------------------------------------------------------------------
+// Community detection 
+// Based on the article "Fast unfolding of community hierarchies in large networks"
+// Copyright (C) 2008 V. Blondel, J.-L. Guillaume, R. Lambiotte, E. Lefebvre
+//
+// This program must not be distributed without agreement of the above mentionned authors.
+//-----------------------------------------------------------------------------
+// Author   : E. Lefebvre, adapted by J.-L. Guillaume
+// Email    : jean-loup.guillaume@lip6.fr
+// Location : Paris, France
+// Time	    : February 2008
+//-----------------------------------------------------------------------------
+// see readme.txt for more details
+
+using namespace std;
+#include <queue>
+#include "../include/graph.h"
+
+char *infile   = NULL;
+char *outfile  = NULL;
+char *outfile_w  = NULL;
+int type       = UNWEIGHTED;
+bool do_renumber = true;
+bool do_kernel = false;
+
+void
+usage(char *prog_name, const char *more) {
+  cerr << more;
+  cerr << "usage: " << prog_name << " -i input_file" << endl << endl;
+  cerr << "read the graph and write it kernelized." << endl;
+  cerr << "-h\tshow this usage message." << endl;
+  exit(0);
+}
+
+void
+parse_args(int argc, char **argv) {
+  for (int i = 1; i < argc; i++) {
+    if(argv[i][0] == '-') {
+      switch(argv[i][1]) {
+      case 'i':
+	if (i==argc-1)
+	  usage(argv[0], "Infile missing\n");
+	infile = argv[i+1];
+	i++;
+	break;
+      case 'k' :
+	do_kernel=true;
+	break;
+      default:
+	usage(argv[0], "Unknown option\n");
+      }
+    } else {
+      usage(argv[0], "More than one filename\n");
+    }
+  }
+  if (infile==NULL)
+    usage(argv[0], "In or outfile missing\n");
+}
+
+void 
+delVertices(Graph& g, queue<int>& q) {
+	while (!q.empty()) {
+		//cout << "q " << q.front() << endl;
+		//cout << "g.links_in.size() " << g.links_in.size() << endl;
+		//cout << "g.links_out.size() " << g.links_out.size() << endl;
+		if (g.links_in[q.front()].size() != 0) {
+			
+			for(int i=0;i<g.links_in[q.front()].size();i++) {
+				//cout << "g.links_in[q.front()][i].first " << g.links_in[q.front()][i].first << endl;
+				for(vector<pair<int,float> >::iterator j = g.links_out[g.links_in[q.front()][i].first].begin(); j != g.links_out[g.links_in[q.front()][i].first].end(); j++) {
+					//cout << "j.first " << (*j).first << endl;
+					if ((*j).first == q.front()) {
+						//cout << "size" <<g.links_out[g.links_in[q.front()][i].first].size() << endl;
+						g.links_out[g.links_in[q.front()][i].first].erase(j);
+						//cout << "size" <<g.links_out[g.links_in[q.front()][i].first].size() << endl;
+					//	cout << "delete " << endl;
+						break;
+					}
+				} 
+			} 
+			g.links_in[q.front()].clear();
+		}
+		if (g.links_out[q.front()].size() != 0) {
+			for(int i=0;i<g.links_out[q.front()].size();i++) {
+				//cout << "g.links_out[q.front()][i].first " << g.links_out[q.front()][i].first << endl;
+				for(vector<pair<int,float> >::iterator j = g.links_in[g.links_out[q.front()][i].first].begin(); j != g.links_in[g.links_out[q.front()][i].first].end(); j++) 					{
+					//cout << "j.first " << (*j).first << endl;
+					if ((*j).first == q.front()) {
+						//cout << "size" <<g.links_in[g.links_out[q.front()][i].first].size() << endl;
+						g.links_in[g.links_out[q.front()][i].first].erase(j);
+						//cout << "size" <<g.links_in[g.links_out[q.front()][i].first].size() << endl;
+					//	cout << "delete " << endl;
+						break;
+					}
+				} 
+			} 
+			g.links_out[q.front()].clear();
+		}
+		q.pop();
+	}
+
+}
+
+int
+main(int argc, char **argv) {
+  parse_args(argc, argv);
+  Graph* g;
+
+   // renumber(type, (string)infile, (string)infile + "_renum");
+
+    string nameGraph = (string)infile;
+<<<<<<< .mine
+    cout << "Creation du graphe kernélisé de " << infile << endl;
+=======
+    cout << "Creation du graphe kernélisé de "<< infile << endl;
+>>>>>>> .r101
+    g = new Graph((char*)nameGraph.c_str(), type, true);
+    
+    
+    
+    cout << "Fin de la création du graphe " << endl;
+<<<<<<< .mine
+//    (*g).display(type);
+=======
+    //(*g).display(type);
+>>>>>>> .r101
+	//On effectue un BFS pour conserver uniquement la composante géante
+	cout << "BFS " << endl;
+    	queue<int> q;
+	int x,z;
+	//Permet de savoir si un noeud i a été vu pendant le BFS
+	//La valeur par défaut à la création du vecteur est false dans chaque case
+	vector<bool> vu;
+	vu.resize((*g).links_in.size()); 
+	//Le BFS part du sommet 0
+	vu[2] =true;
+	q.push(2);
+	while (!q.empty()) {
+		x=q.front();
+		q.pop();
+		for (int i=0; i < (*g).links_out[x].size(); i++) {
+			z= (*g).links_out[x][i].first;
+			if (!vu[z])	{
+				vu[z] = true;
+				q.push(z);
+			}
+		}
+	}
+	//Tous les sommets qui n'ont pas été vus sont à supprimer !
+	for (int i =0; i < (*g).links_in.size(); i++) {
+		if (!vu[i])
+			q.push(i);
+	}
+	vu.clear();
+	delVertices((*g), q);
+	cout << "Fin du BFS " << endl;
+<<<<<<< .mine
+//	(*g).display(type);
+=======
+	//(*g).display(type);
+>>>>>>> .r101
+	if (do_kernel) {
+		cout << "Suppressions des puits et sources de tous niveaux " << endl;
+		//On supprime maintenant les puits et els sources
+		vector<bool> supprime;
+		supprime.resize((*g).links_in.size()); 
+		//On supprime à tous les niveaux
+		while (true) {
+			q.empty();
+		    	for (int i =0; i < (*g).links_in.size(); i++) {
+				if  (((*g).links_in[i].size() == 0 || (*g).links_out[i].size() == 0) && (!supprime[i])) {
+					q.push(i);
+					supprime[i]= true;
+				}
+		    	}
+			//Si aucun autre puits ou source n'a été détecté, on arrête
+			if (q.empty())
+				break;
+			//Sinon, on supprime ces sommets et on cherchera ensuite les puits et sources de niveau supérieur
+			else
+		 		delVertices((*g), q);
+		}
+	    	cout << "Fin de la suppression des puits et sources " << endl;
+	}
+
+  
+  
+  
+<<<<<<< .mine
+ // (*g).display(type);
+=======
+  //(*g).display(type);
+>>>>>>> .r101
+  (*g).displayFile((nameGraph+"_kernelized"), type);
+
+}
